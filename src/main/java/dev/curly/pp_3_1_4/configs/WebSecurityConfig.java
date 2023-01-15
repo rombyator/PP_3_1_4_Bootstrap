@@ -1,14 +1,13 @@
 package dev.curly.pp_3_1_4.configs;
 
-import dev.curly.pp_3_1_4.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -17,16 +16,20 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class WebSecurityConfig {
     private final SuccessUserHandler successUserHandler;
-    private final UserService userService;
+    private final UserDetailsService userDetailsService;
 
-    public WebSecurityConfig(SuccessUserHandler successUserHandler, @Lazy UserService userService) {
+    public WebSecurityConfig(SuccessUserHandler successUserHandler, UserDetailsService userDetailsService) {
         this.successUserHandler = successUserHandler;
-        this.userService = userService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // Disable csrf for /logout to work with GET requests
+            .csrf()
+            .disable()
+
             // Access control
             .authorizeHttpRequests()
             .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -36,26 +39,22 @@ public class WebSecurityConfig {
             // Login
             .and()
             .formLogin()
+            .loginPage("/login")
+            .loginProcessingUrl("/do-login")
             .successHandler(successUserHandler)
             .permitAll()
 
             // Logout
             .and()
             .logout()
-            .logoutUrl("/logout")
-            .logoutSuccessUrl("/")
-
-            // Exception handling
-            .and()
-            .exceptionHandling()
-            .accessDeniedPage("/forbidden");
+            .permitAll();
 
         return http.build();
     }
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring().requestMatchers("/", "/css/**", "/js/**", "/img/**", "/favicon.ico");
+        return web -> web.ignoring().requestMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico");
     }
 
     @Bean
@@ -67,7 +66,7 @@ public class WebSecurityConfig {
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setPasswordEncoder(passwordEncoder());
-        authProvider.setUserDetailsService(userService);
+        authProvider.setUserDetailsService(userDetailsService);
 
         return authProvider;
     }

@@ -1,12 +1,11 @@
 package dev.curly.pp_3_1_4.service;
 
+import dev.curly.pp_3_1_4.exceptions.UserEmailAlreadyInUse;
 import dev.curly.pp_3_1_4.model.Role;
 import dev.curly.pp_3_1_4.model.User;
 import dev.curly.pp_3_1_4.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +29,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void add(User user) {
+    public void add(User user) throws UserEmailAlreadyInUse {
+        if (userRepo.findByEmail(user.getEmail()).isPresent()) {
+            throw new UserEmailAlreadyInUse();
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepo.save(user);
     }
@@ -43,12 +46,13 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void update(User user) {
-        var dbUser = loadUserByUsername(user.getUsername());
+        var dbUser = getById(user.getId());
         var rawPassword = user.getPassword();
-        var encodedPassword = dbUser.getPassword();
 
-        if (rawPassword != null && !passwordEncoder.matches(rawPassword, encodedPassword)) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if (rawPassword != null && !rawPassword.isEmpty()) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+        } else {
+            user.setPassword(dbUser.getPassword());
         }
 
         userRepo.save(user);
@@ -63,15 +67,5 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isUserWithRoleExists(Role role) {
         return userRepo.existsWithRole(role.getName());
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepo.findByName(username)
-                       .orElseThrow(
-                           () -> new UsernameNotFoundException(
-                               String.format("No user with username: %s", username)
-                           )
-                       );
     }
 }

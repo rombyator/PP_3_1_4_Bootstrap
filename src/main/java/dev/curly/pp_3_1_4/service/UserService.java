@@ -1,15 +1,15 @@
 package dev.curly.pp_3_1_4.service;
 
+import dev.curly.pp_3_1_4.exceptions.UserEmailAlreadyInUse;
 import dev.curly.pp_3_1_4.model.Role;
 import dev.curly.pp_3_1_4.model.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
-public interface UserService extends UserDetailsService {
+public interface UserService {
     List<User> getAll();
 
-    void add(User user);
+    void add(User user) throws UserEmailAlreadyInUse;
 
     User getById(long id);
 

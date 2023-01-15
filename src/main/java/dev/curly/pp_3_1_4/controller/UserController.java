@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     @GetMapping()
     public String show(@AuthenticationPrincipal User user, Model model) {
-        model.addAttribute("user", user);
+        model.addAttribute("currentUser", user);
 
-        return "user/show";
+        return "user";
     }
 }

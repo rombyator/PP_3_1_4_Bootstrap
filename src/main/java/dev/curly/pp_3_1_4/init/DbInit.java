@@ -1,5 +1,6 @@
 package dev.curly.pp_3_1_4.init;
 
+import dev.curly.pp_3_1_4.exceptions.UserEmailAlreadyInUse;
 import dev.curly.pp_3_1_4.model.Role;
 import dev.curly.pp_3_1_4.model.User;
 import dev.curly.pp_3_1_4.service.RoleService;
@@ -25,7 +26,7 @@ public class DbInit {
      * Add admin user if no admins present in db
      */
     @PostConstruct
-    private void initializeDb() {
+    private void initializeDb() throws UserEmailAlreadyInUse {
         if (userService.isUserWithRoleExists(Role.adminRole())) {
             return;
         }
@@ -38,19 +39,21 @@ public class DbInit {
 
         // Add admin
         var admin = new User();
-        admin.setName("admin");
+        admin.setFirstName("Admin");
+        admin.setLastName("Foo");
         admin.setPassword("admin");
         admin.setEmail("admin@local.test");
-        admin.setAge(0);
+        admin.setAge(30);
         admin.setRoles(List.of(adminRole, userRole));
         userService.add(admin);
 
         // Add user
         var user = new User();
-        user.setName("user");
+        user.setFirstName("User");
+        user.setLastName("Bar");
         user.setPassword("user");
         user.setEmail("user@local.test");
-        user.setAge(0);
+        user.setAge(25);
         user.setRoles(List.of(userRole));
         userService.add(user);
     }

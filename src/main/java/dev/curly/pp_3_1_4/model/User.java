@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 public class User implements UserDetails {
@@ -14,17 +15,18 @@ public class User implements UserDetails {
     @GeneratedValue
     private long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    private String firstName;
 
-    @Column(unique = true)
+    private String lastName;
+
+    @Column(unique = true, nullable = false)
     private String email;
 
     private String password;
 
     private int age;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "users_roles",
         joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
@@ -35,9 +37,21 @@ public class User implements UserDetails {
     public static User anonymousUser() {
         var user = new User();
         user.setId(-1);
-        user.setName("Anonymous");
+        user.setFirstName("Anonymous");
+        user.setLastName("");
         user.setAge(0);
         user.setEmail("no email");
+        user.setRoles(List.of());
+
+        return user;
+    }
+
+    public static User newUser() {
+        var user = new User();
+        user.setFirstName("");
+        user.setLastName("");
+        user.setAge(0);
+        user.setEmail("");
         user.setRoles(List.of());
 
         return user;
@@ -54,12 +68,20 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {
@@ -95,6 +117,10 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
+    public List<String> roleNames() {
+        return roles.stream().map(Role::getSimpleName).toList();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return getRoles();
@@ -102,7 +128,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return getName();
+        return getEmail();
     }
 
     @Override
@@ -129,11 +155,28 @@ public class User implements UserDetails {
     public String toString() {
         return "User{" +
             "id=" + id +
-            ", name='" + name + '\'' +
+            ", firstName='" + firstName + '\'' +
+            ", lastName='" + lastName + '\'' +
             ", email='" + email + '\'' +
             ", password='" + password + '\'' +
             ", age=" + age +
             ", roles=" + roles +
             '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(email);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+
+        User other = (User) obj;
+
+        return Objects.equals(email, other.email);
     }
 }
